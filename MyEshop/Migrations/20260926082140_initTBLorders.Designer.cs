@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyEshop.Data;
 
@@ -11,9 +12,11 @@ using MyEshop.Data;
 namespace MyEshop.Migrations
 {
     [DbContext(typeof(MyEshopContext))]
-    partial class MyEshopContextModelSnapshot : ModelSnapshot
+    [Migration("20260926082140_initTBLorders")]
+    partial class initTBLorders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -202,9 +205,12 @@ namespace MyEshop.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int>("UsersUserId")
+                        .HasColumnType("int");
+
                     b.HasKey("OrderId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UsersUserId");
 
                     b.ToTable("Orders");
                 });
@@ -216,9 +222,6 @@ namespace MyEshop.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DetailId"));
-
-                    b.Property<int>("Count")
-                        .HasColumnType("int");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
@@ -340,7 +343,7 @@ namespace MyEshop.Migrations
                 {
                     b.HasOne("MyEshop.Models.Users", "Users")
                         .WithMany("Orders")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("UsersUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

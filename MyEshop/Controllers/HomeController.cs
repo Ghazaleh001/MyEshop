@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyEshop.Data;
@@ -10,7 +12,7 @@ namespace MyEshop.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private MyEshopContext _context;
-        private static Cart _cart = new Cart();
+  
 
         public HomeController(ILogger<HomeController> logger, MyEshopContext context)
         {
@@ -30,7 +32,7 @@ namespace MyEshop.Controllers
                 .Include(p => p.Item)
                 .SingleOrDefault(p => p.Id == id);
 
-            if(product == null)
+            if (product == null)
             {
                 return NotFound();
             }
@@ -49,34 +51,77 @@ namespace MyEshop.Controllers
 
             return View(vm);
         }
+
+        [Authorize]
         public IActionResult AddToCart(int itemId)
         {
             var product = _context.Products.Include(p => p.Item).SingleOrDefault(p => p.ItemId == itemId);
-            if(product != null)
+            if (product != null)
             {
-                var cartItem = new CartItem()
+                int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier).ToString());
+                var order = _context.Orders.FirstOrDefault(o => o.UserId == userId && !o.IsFinally);
+                if (order != null)
                 {
-                    Item = product.Item,
-                    Quantity = 1
-                };
-                _cart.addItem(cartItem);
+                    var orderDetail =
+                        _context.OrderDetails.FirstOrDefault(d =>
+                            d.OrderId == order.OrderId && d.ProductId == product.Id);
+                    if (orderDetail != null)
+                    {
+                        orderDetail.Count += 1;
+                    }
+                    else
+                    {
+                        _context.OrderDetails.Add(new OrderDetail()
+                        {
+                            OrderId = order.OrderId,
+                            ProductId = product.Id,
+                            Price = product.Item.Price,
+                            Count = 1
+                        });
+                    }
+                }
+                else
+                {
+                    order = new Order()
+                    {
+                        IsFinally = false,
+                        CreateDate = DateTime.Now,
+                        UserId = userId
+                    };
+                    _context.Orders.Add(order);
+                    _context.SaveChanges();
+                    
+                    _context.OrderDetails.Add(new OrderDetail()
+                    {
+                        OrderId = order.OrderId,
+                        ProductId = product.Id,
+                        Price = product.Item.Price,
+                        Count = 1
+                    });
+                }
+
+                _context.SaveChanges();
             }
             return RedirectToAction("ShowCart");
         }
 
+        [Authorize]
         public IActionResult ShowCart()
         {
-            var cartVM = new CartViewModel()
-            {
-                CartItems = _cart.CartItem,
-                OrderTotal = _cart.CartItem.Sum(c => c.getTotalPrice())
-            };
-            return View(cartVM);
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier).ToString());
+            var order = _context.Orders.Where(o => o.UserId == userId && !o.IsFinally)
+                .Include(o => o.OrderDetails)
+                .ThenInclude(c => c.Product)
+                .FirstOrDefault();
+            return View(order);
         }
 
-        public IActionResult RemoveFromCart(int itemId)
+        [Authorize]
+        public IActionResult RemoveFromCart(int detailId)
         {
-            _cart.removeItem(itemId);
+            var orderDeail = _context.OrderDetails.Find(detailId);
+            _context.Remove(orderDeail);
+            _context.SaveChanges();
             return RedirectToAction("ShowCart");
         }
 
@@ -85,6 +130,7 @@ namespace MyEshop.Controllers
         {
             return View();
         }
+
         public IActionResult Privacy()
         {
             return View();

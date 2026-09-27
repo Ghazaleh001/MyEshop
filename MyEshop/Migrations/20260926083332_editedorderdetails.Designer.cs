@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyEshop.Data;
 
@@ -11,9 +12,11 @@ using MyEshop.Data;
 namespace MyEshop.Migrations
 {
     [DbContext(typeof(MyEshopContext))]
-    partial class MyEshopContextModelSnapshot : ModelSnapshot
+    [Migration("20260926083332_editedorderdetails")]
+    partial class editedorderdetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -202,9 +205,12 @@ namespace MyEshop.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int>("UsersUserId")
+                        .HasColumnType("int");
+
                     b.HasKey("OrderId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UsersUserId");
 
                     b.ToTable("Orders");
                 });
@@ -340,7 +346,7 @@ namespace MyEshop.Migrations
                 {
                     b.HasOne("MyEshop.Models.Users", "Users")
                         .WithMany("Orders")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("UsersUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
